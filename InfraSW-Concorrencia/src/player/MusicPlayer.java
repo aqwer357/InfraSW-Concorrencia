@@ -18,9 +18,9 @@ public class MusicPlayer {
 						String song = in.next();
 						
 						if (command.equals("add")) {
-							playlist.add();
+							playlist.add(song);
 						} else {
-							playlist.remove();
+							playlist.remove(song);
 						}
 						
 					} catch (InterruptedException e) {
