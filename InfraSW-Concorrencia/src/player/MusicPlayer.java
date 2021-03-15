@@ -1,51 +1,54 @@
 package player;
 
 import java.util.Scanner;
-
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MusicPlayer {
 
 	public static void main(String[] args) {
+		ExecutorService executorService;
+
 		try {
+			executorService = Executors.newFixedThreadPool(2);
 			Scanner in = new Scanner(System.in);
-			
 			final Playlist playlist = new Playlist();
-			
+
 			Runnable addRemoveSong = () -> {
 				while (true) {
 					try {
 						String command = in.next();
 						String song = in.next();
-						
+
 						if (command.equals("add")) {
-							playlist.add(song);
+							playlist.addSong(song);
 						} else {
-							playlist.remove(song);
+							playlist.removeSong(song);
 						}
-						
+
 					} catch (InterruptedException e) {
 						System.out.println("Erro em addRemoveSong()");
 					}
 				}
-				
+
 			};
-			
+
 			Runnable showPlaylist = () -> {
 				while (true) {
 					try {
-						playlist.show();
-						
+						playlist.showPlaylist();
+
 					} catch (InterruptedException e) {
 						System.out.println("Erro em showPlaylist()");
 					}
 				}
 			};
-	
-			
-			addRemoveSong.run();
-			
+
+			executorService.submit(showPlaylist);
+			executorService.submit(addRemoveSong);
+
 		} catch (Exception ignored) {
-			
+
 		}
 	}
 
