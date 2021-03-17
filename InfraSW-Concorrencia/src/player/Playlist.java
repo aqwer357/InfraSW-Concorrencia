@@ -15,7 +15,7 @@ public class Playlist {
 		try {
 			lock.lock();
 			playlist.add(song);
-			System.out.println(song + " added to playlist!");
+			System.out.println(song + " added to the playlist!");
 			noUpdateCondition.signalAll();
 
 		} finally {
@@ -26,14 +26,13 @@ public class Playlist {
 	public void removeSong(String song) throws InterruptedException {
 		try {
 			lock.lock();
-			boolean removed = false;
-			for (int i = 0; i < playlist.size() || removed; i++)
+			for (int i = 0; i < playlist.size(); i++)
 				if (playlist.get(i).equals(song)) {
 					playlist.remove(i);
-					removed = true;
+					i--;
 				}
 			
-			System.out.println(song + " removed from playlist!");
+			System.out.println(song + " removed from the playlist!");
 			noUpdateCondition.signalAll();
 
 		} finally {
