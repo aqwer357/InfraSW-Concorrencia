@@ -5,12 +5,20 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.*;
 import java.awt.*;
+import java.awt.event.ActionEvent;
+import java.awt.event.ActionListener;
+import java.io.File;
+import java.util.concurrent.locks.Condition;
+import java.util.concurrent.locks.Lock;
+import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
-
+	private final static Playlist playlist = new Playlist();
+	
 	public static void main(String[] args) {
-		ExecutorService executorService;
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
+		final JFileChooser fc = new JFileChooser();
+
 		JFrame frame = new JFrame("My First GUI");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(400, 300);
@@ -46,52 +54,26 @@ public class MusicPlayer {
 		southPanel.add(currentSong);
 		southPanel.add(removeSong);
 
+		// Declarando os ActionListeners dos botoes
+		addSong.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent button) {
+				int r = fc.showOpenDialog(null);
+
+				if (r == JFileChooser.APPROVE_OPTION) {
+					String songName = fc.getSelectedFile().getName();
+					
+					playlist.addSong(songName);
+					songList.setListData(playlist.getPlaylist().toArray());
+					
+				}
+			}
+		});
+
 		frame.getContentPane().add(BorderLayout.NORTH, northPanel);
 		frame.getContentPane().add(BorderLayout.CENTER, scrollPane);
 		frame.getContentPane().add(BorderLayout.SOUTH, southPanel);
 		frame.setVisible(true);
-		
-		try {
-			executorService = Executors.newFixedThreadPool(2);
-			Scanner in = new Scanner(System.in);
-			final Playlist playlist = new Playlist();
 
-			Runnable addRemoveSong = () -> {
-				while (true) {
-					try {
-						String command = in.next();
-						String song = in.next();
-
-						if (command.equals("add")) {
-							playlist.addSong(song);
-						} else if (command.equals("remove")) {
-							playlist.removeSong(song);
-						}
-					} catch (InterruptedException e) {
-						System.out.println("Erro em addRemoveSong()");
-					}
-				}
-
-			};
-
-			Runnable showPlaylist = () -> {
-				while (true) {
-					try {
-						playlist.showPlaylist();
-						songList.setListData(playlist.getPlaylist().toArray());
-
-					} catch (InterruptedException e) {
-						System.out.println("Erro em showPlaylist()");
-					}
-				}
-			};
-
-			executorService.submit(showPlaylist);
-			executorService.submit(addRemoveSong);
-
-		} catch (Exception ignored) {
-
-		}
 	}
 
 }
