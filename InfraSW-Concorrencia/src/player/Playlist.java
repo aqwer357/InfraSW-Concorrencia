@@ -55,4 +55,8 @@ public class Playlist {
 			lock.unlock();
 		}
 	}
+
+	public ArrayList<Song> getPlaylist() {
+		return playlist;
+	}
 }
