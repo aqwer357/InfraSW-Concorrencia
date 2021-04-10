@@ -5,10 +5,12 @@ import java.util.Random;
 public class Song {
     private String Name;
     private int Duration;
+    private boolean Playing;
 
     public Song(String name){
         this.Name = name;
         this.Duration = time();
+        this.Playing = false;
     }
 
     public int time(){
@@ -30,5 +32,12 @@ public class Song {
     }
     public void setName(String name) {
         Name = name;
+    }
+
+    public void setPlaying(boolean playing) {
+        Playing = playing;
+    }
+    public boolean isPlaying() {
+        return Playing;
     }
 }
