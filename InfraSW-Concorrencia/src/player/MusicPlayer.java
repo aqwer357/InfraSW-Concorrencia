@@ -4,6 +4,8 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
+
+
 public class MusicPlayer {
 
 	public static void main(String[] args) {
@@ -22,10 +24,9 @@ public class MusicPlayer {
 
 						if (command.equals("add")) {
 							playlist.addSong(song);
-						} else {
+						} else if(command.equals("remove")) {
 							playlist.removeSong(song);
 						}
-
 					} catch (InterruptedException e) {
 						System.out.println("Erro em addRemoveSong()");
 					}
