@@ -74,9 +74,11 @@ public class MusicPlayer {
 
 		removeSong.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				String songSelectedName = songList.getSelectedValue().toString();
-				playlist.removeSong(songSelectedName);
+				int songSelectedIndex = songList.getSelectedIndex();
+				
+				playlist.removeSong(songSelectedIndex);
 				songList.setListData(playlist.getPlaylist().toArray());
+				
 			}
 		});
 

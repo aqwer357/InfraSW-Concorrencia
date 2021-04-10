@@ -17,25 +17,8 @@ public class Playlist {
 
 	}
 
-	public void removeSong(String song) {
-		for (int i = 0; i < playlist.size(); i++)
-			if (playlist.get(i).getName().equals(song)) {
-				playlist.remove(i);
-				i--;
-			}
-
-		System.out.println(song + " removed from the playlist!");
-
-	}
-
-	public void showPlaylist() {
-		int arrSize = playlist.size();
-		int i = 0;
-		for (Song song : playlist) {
-			System.out.println(i + " - " + song.getName());
-			i++;
-		}
-
+	public void removeSong(int songIndex) {
+		playlist.remove(songIndex);
 	}
 
 	public ArrayList<Song> getPlaylist() {
