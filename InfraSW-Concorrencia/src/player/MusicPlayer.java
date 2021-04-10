@@ -1,6 +1,5 @@
 package player;
 
-import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.*;
@@ -20,7 +19,6 @@ public class MusicPlayer {
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
 		final JFileChooser fc = new JFileChooser();
-
 
 		JFrame frame = new JFrame("My First GUI");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -60,29 +58,27 @@ public class MusicPlayer {
 		// Declarando os ActionListeners dos botoes
 		addSong.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				int r = fc.showOpenDialog(null);
+				int r = fc.showOpenDialog(null); // Abre a janela para selecionar o arquivo
 
 				if (r == JFileChooser.APPROVE_OPTION) {
-					String songName = fc.getSelectedFile().getName();
-					
-					playlist.addSong(songName);
-					songList.setListData(playlist.getPlaylist().toArray());
-					
+					String songName = fc.getSelectedFile().getName(); // Obtem o nome do arquivo selecionado
+
+					playlist.addSong(songName); // Adiciona a musica na playlist
+					songList.setListData(playlist.getPlaylist().toArray()); // Atualiza a lista da GUI
+
 				}
 			}
 		});
 
 		removeSong.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				int songSelectedIndex = songList.getSelectedIndex();
-				
-				playlist.removeSong(songSelectedIndex);
+				int songSelectedIndex = songList.getSelectedIndex(); // Obtem o index do item selecionado
+
+				playlist.removeSong(songSelectedIndex); // Remove a musica da playlist
 				songList.setListData(playlist.getPlaylist().toArray());
-				
+
 			}
 		});
-
-
 
 		frame.getContentPane().add(BorderLayout.NORTH, northPanel);
 		frame.getContentPane().add(BorderLayout.CENTER, scrollPane);

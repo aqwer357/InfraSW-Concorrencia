@@ -1,11 +1,6 @@
 package player;
 
-import java.util.Random;
-
 import java.util.ArrayList;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class Playlist {
 	private final ArrayList<Song> playlist = new ArrayList();
