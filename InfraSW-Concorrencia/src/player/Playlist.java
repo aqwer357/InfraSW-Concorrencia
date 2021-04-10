@@ -47,7 +47,7 @@ public class Playlist {
 			int arrSize = playlist.size();
 			noUpdateCondition.await();
 			int i = 0;
-			for (Song song : playlist) {
+			for (Song song : playlist) { 
 				System.out.println(i + " - " + song.getName());
 				i++;
 			}
