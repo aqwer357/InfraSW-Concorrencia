@@ -4,6 +4,8 @@ import java.util.Scanner;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.*;
+import javax.swing.event.ListSelectionEvent;
+import javax.swing.event.ListSelectionListener;
 import java.awt.*;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
@@ -14,10 +16,11 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
-	
+
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
 		final JFileChooser fc = new JFileChooser();
+
 
 		JFrame frame = new JFrame("My First GUI");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
@@ -68,6 +71,16 @@ public class MusicPlayer {
 				}
 			}
 		});
+
+		removeSong.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent button) {
+				String songSelectedName = songList.getSelectedValue().toString();
+				playlist.removeSong(songSelectedName);
+				songList.setListData(playlist.getPlaylist().toArray());
+			}
+		});
+
+
 
 		frame.getContentPane().add(BorderLayout.NORTH, northPanel);
 		frame.getContentPane().add(BorderLayout.CENTER, scrollPane);
