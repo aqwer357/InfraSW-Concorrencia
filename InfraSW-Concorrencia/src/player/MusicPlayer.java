@@ -1,5 +1,6 @@
 package player;
 
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.*;
@@ -15,24 +16,33 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
-
+	
+	// Criando o painel de cima
+	private static JPanel northPanel = new JPanel();
+	private static JProgressBar progress = new JProgressBar(); // Barra de progresso da musica
+	private static JButton previous = new JButton("<<"); // Botao para musica anterior
+	private static JButton playPause = new JButton(">/||"); // Botao play/pause
+	private static JButton next = new JButton(">>"); // Botao para proxima musica
+	private static JButton addSong = new JButton("Add..."); // Botao para adicionar musica
+	
+	// ScrollPane para exibir a playlist
+	private static JScrollPane scrollPane = new JScrollPane();
+	private static JList songList = new JList();
+	
+	// Criando o painel inferior
+	private static JPanel southPanel = new JPanel();
+	private static JLabel currentSong = new JLabel("Currently playing: ..."); // Mostra a musica sendo tocada
+	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
+		 
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
 		final JFileChooser fc = new JFileChooser();
 
-		JFrame frame = new JFrame("My First GUI");
+		JFrame frame = new JFrame("Music Player");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
 		frame.setSize(400, 300);
 
-		// Criando o painel de cima
-		JPanel northPanel = new JPanel();
-		JProgressBar progress = new JProgressBar(); // Barra de progresso da musica
-		JButton previous = new JButton("<<"); // Botao para musica anterior
-		JButton playPause = new JButton(">/||"); // Botao play/pause
-		JButton next = new JButton(">>"); // Botao para proxima musica
-		JButton addSong = new JButton("Add..."); // Botao para adicionar musica
-
-		// Adicionando os componentes declarados acima ao painel
+		// Adicionando os componentes ao painel superior
 		northPanel.add(progress);
 		northPanel.add(previous);
 		northPanel.add(playPause);
@@ -40,17 +50,11 @@ public class MusicPlayer {
 		northPanel.add(addSong);
 
 		// Criando o painel que vai mostrar a playlist no meio
-		JScrollPane scrollPane = new JScrollPane();
-		JList songList = new JList();
 		songList.setCellRenderer(customCellRenderer); // Altera o que vai ser exibido do objeto na lista
 		scrollPane.setViewportView(songList);
 
-		// Criando o painel inferior
-		JPanel southPanel = new JPanel();
-		JLabel currentSong = new JLabel("Currently playing: ..."); // Mostra a musica sendo tocada
 		currentSong.setFont(new Font("Tahoma", Font.PLAIN, 16));
-		JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
-
+		
 		// Adicionando os componentes acima ao painel inferior
 		southPanel.add(currentSong);
 		southPanel.add(removeSong);
