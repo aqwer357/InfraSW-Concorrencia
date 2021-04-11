@@ -17,7 +17,13 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
-	
+	private static final Lock lock = new ReentrantLock();
+	private static  final Condition stackEmptyCondition = lock.newCondition();
+	private static final Condition isPausedCondition = lock.newCondition();
+	private static boolean isRunning = false;
+	private static  final Player p = new Player();
+
+
 	// Criando o painel de cima
 	private static JPanel northPanel = new JPanel();
 	private static JProgressBar progress = new JProgressBar(); // Barra de progresso da musica
@@ -35,44 +41,7 @@ public class MusicPlayer {
 	private static JLabel currentSong = new JLabel("Currently playing: ..."); // Mostra a musica sendo tocada
 	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
 	
-	private static SwingWorker<Boolean, Integer> musicTime = new SwingWorker<Boolean, Integer>() {
-		 @Override
-		 protected Boolean doInBackground() throws Exception {
-		  // Contando o tempo de execução da música
-		  for (int i = 0; i <= 10; i++) {
-		   Thread.sleep(1000);
-		   publish(i);
-		  }
-		 
-		  // Podemos utilizar um boolean para dizer quando a música termina?
-		  return true;
-		 }
-		 
-		 // Pode atualizar a GUI aqui, executa depois do de doInBackground
-		 protected void done() {
-		 
-		  boolean status;
-		  try {
-		   // Retrieve the return value of doInBackground.
-		   status = get();
-		  } catch (InterruptedException e) {
-		   // This is thrown if the thread's interrupted.
-		  } catch (ExecutionException e) {
-		   // This is thrown if we throw an exception
-		   // from doInBackground.
-		  }
-		 }
-		 
-		 @Override
-		 // Pode atualizar a GUI aqui, recebe o que for passado por publish() em doInBackground
-		 protected void process(List<Integer> chunks) {
-		  int mostRecentValue = chunks.get(chunks.size()-1);
-		 
-		  progress.setString(Integer.toString(mostRecentValue) + "/");
-		 }
-		 
-		};
-	
+
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
 		final JFileChooser fc = new JFileChooser();
@@ -122,17 +91,34 @@ public class MusicPlayer {
 
 			}
 		});
-		
+
+		playPause.addActionListener( new ActionListener() {
+			@Override
+			public void actionPerformed(ActionEvent e){
+				if(Player.isRunning()){
+					p.run();
+				}else if(Player.isPaused()){
+					p.resume();
+				}else{
+					p.pause();
+				}
+			}
+		});
+
 		progress.setStringPainted(true);
 		progress.setString("X/X");
-		
-		musicTime.execute();	// Inicia o thread de tempo de música
-		
+
+
+
 		frame.getContentPane().add(BorderLayout.NORTH, northPanel);
 		frame.getContentPane().add(BorderLayout.CENTER, scrollPane);
 		frame.getContentPane().add(BorderLayout.SOUTH, southPanel);
 		frame.setVisible(true);
 
+	}
+
+	public static void setProgress(int mostRecentValue){
+		progress.setString(Integer.toString(mostRecentValue) + "/");
 	}
 
 }
