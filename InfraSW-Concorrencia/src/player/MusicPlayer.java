@@ -17,12 +17,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
-	private static final Lock lock = new ReentrantLock();
-	private static  final Condition stackEmptyCondition = lock.newCondition();
-	private static final Condition isPausedCondition = lock.newCondition();
-	private static boolean isRunning = false;
-	private static  final Player p = new Player();
-
 
 	// Criando o painel de cima
 	private static JPanel northPanel = new JPanel();
@@ -31,16 +25,18 @@ public class MusicPlayer {
 	private static JButton playPause = new JButton(">/||"); // Botao play/pause
 	private static JButton next = new JButton(">>"); // Botao para proxima musica
 	private static JButton addSong = new JButton("Add..."); // Botao para adicionar musica
-	
+
 	// ScrollPane para exibir a playlist
 	private static JScrollPane scrollPane = new JScrollPane();
 	private static JList songList = new JList();
-	
+
 	// Criando o painel inferior
 	private static JPanel southPanel = new JPanel();
 	private static JLabel currentSong = new JLabel("Currently playing: ..."); // Mostra a musica sendo tocada
 	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
-	
+
+	// SwingWorker que vai "tocar" a musica
+	private static Player musicTime = new Player(progress, 0);
 
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
@@ -62,7 +58,7 @@ public class MusicPlayer {
 		scrollPane.setViewportView(songList);
 
 		currentSong.setFont(new Font("Tahoma", Font.PLAIN, 16));
-		
+
 		// Adicionando os componentes acima ao painel inferior
 		southPanel.add(currentSong);
 		southPanel.add(removeSong);
@@ -92,33 +88,26 @@ public class MusicPlayer {
 			}
 		});
 
-		playPause.addActionListener( new ActionListener() {
-			@Override
-			public void actionPerformed(ActionEvent e){
-				if(Player.isRunning()){
-					p.run();
-				}else if(Player.isPaused()){
-					p.resume();
-				}else{
-					p.pause();
-				}
+		playPause.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent button) {
+				if (musicTime.isPaused())
+					musicTime.resume();
+				else
+					musicTime.pause();
+				
 			}
 		});
 
 		progress.setStringPainted(true);
 		progress.setString("X/X");
 
-
+		musicTime.execute(); // Inicia o thread de tempo de música
 
 		frame.getContentPane().add(BorderLayout.NORTH, northPanel);
 		frame.getContentPane().add(BorderLayout.CENTER, scrollPane);
 		frame.getContentPane().add(BorderLayout.SOUTH, southPanel);
 		frame.setVisible(true);
 
-	}
-
-	public static void setProgress(int mostRecentValue){
-		progress.setString(Integer.toString(mostRecentValue) + "/");
 	}
 
 }
