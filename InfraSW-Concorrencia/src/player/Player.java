@@ -9,9 +9,12 @@ import javax.swing.*;
 
 public class Player extends SwingWorker<Boolean, Integer> {
 	private boolean paused = false;
-	private JProgressBar progress = null;
-	private int musicLength = 0;
-	
+	private JProgressBar progress = null; // Para poder editar a barra de progresso da GUI
+	private int musicLength = 0; // Para determinar quanto tempo a musica deve ser "tocada"
+
+	private final Lock lock = new ReentrantLock();
+	private final Condition pauseCondition = lock.newCondition();
+
 	public Player(JProgressBar pBar, int mLength) {
 		this.progress = pBar;
 		this.musicLength = mLength;
@@ -22,8 +25,10 @@ public class Player extends SwingWorker<Boolean, Integer> {
 	}
 
 	public void resume() {
+		lock.lock(); // Faz lock para poder fazer signalAll
 		paused = false;
-		this.notify();
+		pauseCondition.signalAll();
+		lock.unlock();
 	}
 
 	public boolean isPaused() {
@@ -32,15 +37,20 @@ public class Player extends SwingWorker<Boolean, Integer> {
 
 	@Override
 	protected Boolean doInBackground() throws Exception {
-		// Contando o tempo de execução da música
-		for (int i = 0; i <= 10; i++) {
-			if (paused)
-				wait();
+		try {
+			lock.lock();
+			// Contando o tempo de execução da música
+			for (int i = 0; i <= 10; i++) {
+				if (paused)
+					pauseCondition.await();
 
-			Thread.sleep(1000);
-			publish(i);
+				Thread.sleep(1000);
+				publish(i);
+			}
+			
+		} finally {
+			lock.unlock();
 		}
-
 		// Podemos utilizar um boolean para dizer quando a música termina?
 		return true;
 	}
