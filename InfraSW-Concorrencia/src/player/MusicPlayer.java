@@ -17,7 +17,7 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
-
+	private static Song song_selected;
 	// Criando o painel de cima
 	private static JPanel northPanel = new JPanel();
 	private static JProgressBar progress = new JProgressBar(); // Barra de progresso da musica
@@ -90,24 +90,42 @@ public class MusicPlayer {
 
 		playPause.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				if (musicTime.isPaused())
+				setSelectedSong(songList);
+				String song_name = song_selected.getName();
+				int song_duration = song_selected.getDuration();
+
+				if(!musicTime.isRunning()){
+					currentSong.setText("Currently playing: "+ song_name);
+					musicTime.setMusicLength(song_duration);
+					musicTime.execute();
+				}
+				else if(musicTime.isPaused()) {
+					currentSong.setText("Currently playing: "+ song_name);
 					musicTime.resume();
-				else
+				}
+				else {
+					currentSong.setText("Currently paused: " + song_name);
 					musicTime.pause();
-				
+				}
 			}
 		});
+
 
 		progress.setStringPainted(true);
 		progress.setString("X/X");
 
-		musicTime.execute(); // Inicia o thread de tempo de música
+
 
 		frame.getContentPane().add(BorderLayout.NORTH, northPanel);
 		frame.getContentPane().add(BorderLayout.CENTER, scrollPane);
 		frame.getContentPane().add(BorderLayout.SOUTH, southPanel);
 		frame.setVisible(true);
 
+	}
+
+	public static void setSelectedSong(JList songList){
+		int songSelectedIndex = songList.getSelectedIndex();
+		song_selected = playlist.getPlaylist().get(songSelectedIndex);
 	}
 
 }
