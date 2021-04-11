@@ -7,6 +7,7 @@ import javax.swing.*;
 import javax.swing.event.ListSelectionEvent;
 import javax.swing.event.ListSelectionListener;
 import java.awt.*;
+import java.util.List;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.io.File;
@@ -33,7 +34,45 @@ public class MusicPlayer {
 	private static JPanel southPanel = new JPanel();
 	private static JLabel currentSong = new JLabel("Currently playing: ..."); // Mostra a musica sendo tocada
 	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
+	
+	private static SwingWorker<Boolean, Integer> musicTime = new SwingWorker<Boolean, Integer>() {
+		 @Override
+		 protected Boolean doInBackground() throws Exception {
+		  // Contando o tempo de execução da música
+		  for (int i = 0; i <= 10; i++) {
+		   Thread.sleep(1000);
+		   publish(i);
+		  }
 		 
+		  // Podemos utilizar um boolean para dizer quando a música termina?
+		  return true;
+		 }
+		 
+		 // Pode atualizar a GUI aqui, executa depois do de doInBackground
+		 protected void done() {
+		 
+		  boolean status;
+		  try {
+		   // Retrieve the return value of doInBackground.
+		   status = get();
+		  } catch (InterruptedException e) {
+		   // This is thrown if the thread's interrupted.
+		  } catch (ExecutionException e) {
+		   // This is thrown if we throw an exception
+		   // from doInBackground.
+		  }
+		 }
+		 
+		 @Override
+		 // Pode atualizar a GUI aqui, recebe o que for passado por publish() em doInBackground
+		 protected void process(List<Integer> chunks) {
+		  int mostRecentValue = chunks.get(chunks.size()-1);
+		 
+		  progress.setString(Integer.toString(mostRecentValue) + "/");
+		 }
+		 
+		};
+	
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
 		final JFileChooser fc = new JFileChooser();
@@ -83,7 +122,12 @@ public class MusicPlayer {
 
 			}
 		});
-
+		
+		progress.setStringPainted(true);
+		progress.setString("X/X");
+		
+		musicTime.execute();	// Inicia o thread de tempo de música
+		
 		frame.getContentPane().add(BorderLayout.NORTH, northPanel);
 		frame.getContentPane().add(BorderLayout.CENTER, scrollPane);
 		frame.getContentPane().add(BorderLayout.SOUTH, southPanel);
