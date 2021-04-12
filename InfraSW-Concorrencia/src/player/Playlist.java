@@ -8,7 +8,6 @@ public class Playlist {
 	public void addSong(String song) {
 		Song Song = new Song(song);
 		playlist.add(Song);
-		System.out.println(song + " added to the playlist!");
 
 	}
 
@@ -18,5 +17,9 @@ public class Playlist {
 
 	public ArrayList<Song> getPlaylist() {
 		return playlist;
+	}
+	
+	public Song getLastSong() {
+		return playlist.get(playlist.size() - 1);
 	}
 }

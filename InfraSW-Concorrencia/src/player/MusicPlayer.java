@@ -4,21 +4,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import javax.swing.*;
-import javax.swing.event.ListSelectionEvent;
-import javax.swing.event.ListSelectionListener;
 import java.awt.*;
-import java.util.List;
+import java.util.ArrayList;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
-import java.io.File;
-import java.util.concurrent.locks.Condition;
-import java.util.concurrent.locks.Lock;
-import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
 	private static int index = 0;
-	private static boolean isPlaying = false;
+	private static boolean queueIsEmpty = true;
 
 	// Criando o painel de cima
 	private static JPanel northPanel = new JPanel();
@@ -37,8 +31,8 @@ public class MusicPlayer {
 	private static JLabel currentSong = new JLabel("Currently "); // Mostra a musica sendo tocada
 	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
 
-	// SwingWorker que vai "tocar" a musica
-	private static Player musicTime = new Player(progress, 0);
+	// Array de SwingWorkers, cada musica será um novo thread
+	private static ArrayList<Player> threads = new ArrayList();
 
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
@@ -74,8 +68,11 @@ public class MusicPlayer {
 					String songName = fc.getSelectedFile().getName(); // Obtem o nome do arquivo selecionado
 
 					playlist.addSong(songName); // Adiciona a musica na playlist
+					threads.add(new Player (progress, playlist.getLastSong().getDuration()));	
 					songList.setListData(playlist.getPlaylist().toArray()); // Atualiza a lista da GUI
-					if (playlist.getPlaylist().size() == 1 && !isPlaying) {
+					
+					if (playlist.getPlaylist().size() == 1 && queueIsEmpty) {
+						queueIsEmpty = false;
 						index = 0;
 						start(0);
 					}
@@ -95,31 +92,28 @@ public class MusicPlayer {
 
 		playPause.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				int songSelectedIndex = songList.getSelectedIndex();
-				if (songSelectedIndex >= 0) { 				// verifica se ha som selecionado
-					if (isPlaying) { 						// se sim e estiver tocando algo, cancela a musica atual
-						index = songSelectedIndex - 1; 		// decrementa o index pois a funcao done da musica cancelada
-															// chamara start+1, mas nao queremos range
-						musicTime.cancel(true);
-					} else { 								// Se nao estiver tocando comeca a partir da musica selecionada
-						index = songSelectedIndex;
-						start(0);
-					}
-				} else if (!isPlaying) { // Se nao tem musica selecionada e nem esta tocando, comeca da primeira mÃºsica
+				//int songSelectedIndex = songList.getSelectedIndex();
+				//if (songSelectedIndex >= 0) { 				// verifica se ha som selecionado
+				//	if (!queueIsEmpty) { 						// se sim e estiver tocando algo, cancela a musica atual
+				//		index = songSelectedIndex - 1; 		// decrementa o index pois a funcao done da musica cancelada
+				//											// chamara start+1, mas nao queremos range
+				//		musicTime.cancel(true);
+				//	} else { 								// Se nao estiver tocando comeca a partir da musica selecionada
+				//		index = songSelectedIndex;
+				//		start(0);
+				//	}
+				
+				
+				if (queueIsEmpty) { // Se nao tem musica selecionada e nem esta tocando, comeca da primeira musica
+					queueIsEmpty = false;
 					index = 0;
 					start(0);
+				} else if (threads.get(index).isPaused()) {
+					currentSong.setText("Currently playing: " + playlist.getPlaylist().get(index).getName());
+					threads.get(index).resume();
 				} else {
-					if (!musicTime.isRunning()) { // Se tiver musica tocando, comeca da primeira musica
-						index = 0;
-						start(0);
-					} else if (musicTime.isPaused()) {
-						currentSong.setText("Currently playing: " + playlist.getPlaylist().get(index).getName());
-						musicTime.resume();
-						isPlaying = true;
-					} else {
-						currentSong.setText("Currently paused:" + playlist.getPlaylist().get(index).getName());
-						musicTime.pause();
-					}
+					currentSong.setText("Currently paused:" + playlist.getPlaylist().get(index).getName());
+					threads.get(index).pause();
 				}
 			}
 		});
@@ -142,18 +136,20 @@ public class MusicPlayer {
 
 		if (index + range < playlist.getPlaylist().size()) { // verfica se ha musica no index + range
 			index += range; // atualiza o index
-			musicTime = new Player(progress, 0);
 			Song song = playlist.getPlaylist().get(index);
-			String song_name = song.getName();
-			int song_duration = song.getDuration();
-			currentSong.setText("Current playing: " + song_name);
-			musicTime.setMusicLength(song_duration);
-			musicTime.execute();
-			isPlaying = true;
+			currentSong.setText("Current playing: " + song.getName());
+			
+			// Caso o thread ja tenha sido executado, eh necessario criar uma nova instancia dele
+			if (threads.get(index).isDone())
+				threads.set(index, new Player(progress, song.getDuration()));
+			
+			threads.get(index).execute();
+			queueIsEmpty = false;
 		} else {
 			index = 0;
 			progress.setString("0/0");
-			isPlaying = false;
+			currentSong.setText("Current playing: ...");
+			queueIsEmpty = true;
 		}
 	}
 
