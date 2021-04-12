@@ -42,19 +42,19 @@ public class Player extends SwingWorker<Boolean, Integer> {
 		try {
 			lock.lock();
 			running = true;
-			// Contando o tempo de execu��o da m�sica
+			// Contando o tempo de execucao da musica
 			for (int i = 0; i <= musicLength; i++) {
 				if (paused)
 					pauseCondition.await();
 				Thread.sleep(1000);
 				publish(i);
 			}
-			
+
 		} finally {
 			running = false;
 			lock.unlock();
 		}
-		// Podemos utilizar um boolean para dizer quando a m�sica termina?
+		// Podemos utilizar um boolean para dizer quando a musica termina?
 		return true;
 	}
 
@@ -80,16 +80,16 @@ public class Player extends SwingWorker<Boolean, Integer> {
 	// doInBackground
 	protected void process(List<Integer> chunks) {
 		int mostRecentValue = chunks.get(chunks.size() - 1);
-		progress.setString(Integer.toString(mostRecentValue) + "/"+ musicLength);
+		progress.setString(Integer.toString(mostRecentValue) + "/" + musicLength);
 	}
 
-    public void setMusicLength(int musicLength) {
-        this.musicLength = musicLength;
-    }
+	public void setMusicLength(int musicLength) {
+		this.musicLength = musicLength;
+	}
 
-    public int getMusicLength() {
-        return musicLength;
-    }
+	public int getMusicLength() {
+		return musicLength;
+	}
 
 	public boolean isRunning() {
 		return running;
