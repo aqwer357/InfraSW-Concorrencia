@@ -84,8 +84,14 @@ public class MusicPlayer {
 			public void actionPerformed(ActionEvent button) {
 				int songSelectedIndex = songList.getSelectedIndex(); // Obtem o index do item selecionado
 
-				playlist.removeSong(songSelectedIndex); // Remove a musica da playlist
+				playlist.removeSong(songSelectedIndex);// Remove a musica da playlist
+				threads.get(songSelectedIndex).cancel(true);
+				threads.remove(songSelectedIndex);
 				songList.setListData(playlist.getPlaylist().toArray());
+				
+				// Caso a musica que esta tocando seja removida da playlist, a proxima toca
+				if (songSelectedIndex == index)
+					start(0);
 
 			}
 		});
@@ -117,7 +123,23 @@ public class MusicPlayer {
 				}
 			}
 		});
-
+		
+		previous.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent button) {
+				threads.get(index).cancel(true); // Para de tocar a musica atual
+				start(-1); // Comeca a tocar a music anterior da fila
+				progress.setString("loading...");
+			}
+		});
+		
+		next.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent button) {
+				threads.get(index).cancel(true);
+				start(1); // Comeca a tocar a proxima musica da fila
+				progress.setString("loading...");
+			}
+		});
+		
 		progress.setStringPainted(true);
 		progress.setString("0/0");
 
@@ -136,6 +158,11 @@ public class MusicPlayer {
 
 		if (index + range < playlist.getPlaylist().size()) { // verfica se ha musica no index + range
 			index += range; // atualiza o index
+			
+			// Para caso se aperte previous na primeira musica da fila
+			if (index < 0)
+				index = 0;
+			
 			Song song = playlist.getPlaylist().get(index);
 			currentSong.setText("Current playing: " + song.getName());
 			
@@ -147,8 +174,8 @@ public class MusicPlayer {
 			queueIsEmpty = false;
 		} else {
 			index = 0;
-			progress.setString("0/0");
 			currentSong.setText("Current playing: ...");
+			progress.setString("0/0");
 			queueIsEmpty = true;
 		}
 	}

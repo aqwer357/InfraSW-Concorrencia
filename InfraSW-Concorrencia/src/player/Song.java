@@ -15,7 +15,7 @@ public class Song {
 
     public int time(){
         Random random = new Random();
-        int time = random.nextInt(6) + 6;
+        int time = random.nextInt(6) + 69; // Duracao da musica em segundos
         return time;
     }
 

@@ -1,6 +1,7 @@
 package player;
 
 import java.util.List;
+import java.util.concurrent.CancellationException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.Lock;
@@ -25,7 +26,7 @@ public class Player extends SwingWorker<Boolean, Integer> {
 	}
 
 	public void resume() {
-		lock.lock(); // Faz lock para poder fazer signalAll
+		lock.lock();
 		paused = false;
 		pauseCondition.signalAll();
 		lock.unlock();
@@ -39,47 +40,52 @@ public class Player extends SwingWorker<Boolean, Integer> {
 	protected Boolean doInBackground() throws Exception {
 		try {
 			lock.lock();
-			// Contando o tempo de execucao da musica
-			for (int i = 0; i <= musicLength; i++) {
+			// Contando o tempo de execucao da musica, roda-se o loop 10 vezes por segundo para evitar delay
+			// quando o usuário pausar a musica.
+			for (int i = 0; i <= musicLength*10; i++) {
+				
+				// Se pausado, vai esperar resume mandar o sinal para despausar antes de continuar a contagem
 				if (paused)
 					pauseCondition.await();
-				Thread.sleep(1000);
-				publish(i);
+				
+				Thread.sleep(100);
+				publish(i/10); // Envia para process o tempo decorrido em segundos
 			}
 
 		} finally {
 			lock.unlock();
 		}
-		// Podemos utilizar um boolean para dizer quando a musica termina?
+		
 		return true;
 	}
 
-	// Pode atualizar a GUI aqui, executa depois do de doInBackground
 	protected void done() {
 
 		boolean status;
 		try {
-			// Retrieve the return value of doInBackground.
-			MusicPlayer.start(1);
+			if (!this.isCancelled())
+				MusicPlayer.start(1); // Inicia a tocar a proxima musica
+			
 			status = get();
 		} catch (InterruptedException e) {
-			// This is thrown if the thread's interrupted.
+
 		} catch (ExecutionException e) {
-			// This is thrown if we throw an exception
-			// from doInBackground.
+
+		} catch (CancellationException e) {
+			
 		}
 	}
 
 	@Override
-	// Pode atualizar a GUI aqui, recebe o que for passado por publish() em
-	// doInBackground
+	// Recebe os valores passados com .publish()
 	protected void process(List<Integer> chunks) {
+		// Necessario pois podem vir mais que um valor de uma vez
 		int mostRecentValue = chunks.get(chunks.size() - 1);
-		progress.setString(Integer.toString(mostRecentValue) + "/" + musicLength);
-	}
-
-	public int getMusicLength() {
-		return musicLength;
+		
+		// Atualiza a barra de progresso no formato M:ss
+		progress.setString(mostRecentValue/60 + ":" + String.format("%02d", mostRecentValue % 60) + "/"
+						  + musicLength/60 + ":" + String.format("%02d", musicLength % 60));
+		
 	}
 
 }
