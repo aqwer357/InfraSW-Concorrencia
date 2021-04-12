@@ -65,7 +65,7 @@ public class Player extends SwingWorker<Boolean, Integer> {
 		try {
 			// Retrieve the return value of doInBackground.
 			running = false;
-			progress.setString("X/");
+			MusicPlayer.start(1);
 			status = get();
 		} catch (InterruptedException e) {
 			// This is thrown if the thread's interrupted.
@@ -80,8 +80,7 @@ public class Player extends SwingWorker<Boolean, Integer> {
 	// doInBackground
 	protected void process(List<Integer> chunks) {
 		int mostRecentValue = chunks.get(chunks.size() - 1);
-
-		progress.setString(Integer.toString(mostRecentValue) + "/");
+		progress.setString(Integer.toString(mostRecentValue) + "/"+ musicLength);
 	}
 
     public void setMusicLength(int musicLength) {

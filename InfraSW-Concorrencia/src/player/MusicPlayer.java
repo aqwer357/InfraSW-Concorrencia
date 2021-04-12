@@ -17,7 +17,6 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
-	private static Song song_selected = new Song("");
 	private static int index = 0;
 	private static boolean isPlaying = false;
 
@@ -35,7 +34,7 @@ public class MusicPlayer {
 
 	// Criando o painel inferior
 	private static JPanel southPanel = new JPanel();
-	private static JLabel currentSong = new JLabel("Currently playing: ..."); // Mostra a musica sendo tocada
+	private static JLabel currentSong =new JLabel("Currently "); // Mostra a musica sendo tocada
 	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
 
 	// SwingWorker que vai "tocar" a musica
@@ -76,8 +75,10 @@ public class MusicPlayer {
 
 					playlist.addSong(songName); // Adiciona a musica na playlist
 					songList.setListData(playlist.getPlaylist().toArray()); // Atualiza a lista da GUI
-					if(playlist.getPlaylist().size() == 1)
-						start();
+					if( playlist.getPlaylist().size() == 1 && !isPlaying) {
+						index = 0;
+						start(0);
+					}
 				}
 			}
 		});
@@ -94,29 +95,32 @@ public class MusicPlayer {
 
 		playPause.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-
-				if(!isPlaying) {
-					start();
+				int songSelectedIndex = songList.getSelectedIndex();
+				if(songSelectedIndex >= 0){                  //verifica se há som selecionado
+					if(isPlaying){							 // se sim e estiver tocando algo, cancela a música atual
+						index = songSelectedIndex-1;		// decrementa o index pois a dunção done da música cancelada chamará start+1, mas não queremos range
+						musicTime.cancel(true);
+					}else {                                 // Se não estiver tocando começa a partir da música selecionada
+						index = songSelectedIndex;
+						start(0);
+					}
+				}
+				else if(!isPlaying) {  //Se não tem música selecionada e nem está tocando, começa da primeira música
+					index = 0;
+					start(0);
 				}
 				else{
-					setSelectedSong();
-					String song_name = song_selected.getName();
-					int song_duration = song_selected.getDuration();
-
-					if(!musicTime.isRunning()){
-						musicTime = new Player(progress, 0);
-						currentSong.setText("Currently playing: "+ song_name);
-						musicTime.setMusicLength(song_duration);
-						musicTime.execute();
-						isPlaying = true;
+					if(!musicTime.isRunning()){ //Se tiver música tocando, começa da primeira música
+						index = 0;
+						start(0);
 					}
 					else if(musicTime.isPaused()) {
-						currentSong.setText("Currently playing: "+ song_name);
+						currentSong.setText("Currently playing: "+ playlist.getPlaylist().get(index).getName());
 						musicTime.resume();
 						isPlaying = true;
 					}
 					else {
-						currentSong.setText("Currently paused: " + song_name);
+						currentSong.setText("Currently paused:"+ playlist.getPlaylist().get(index).getName());
 						musicTime.pause();
 					}
 				}
@@ -125,7 +129,7 @@ public class MusicPlayer {
 
 
 		progress.setStringPainted(true);
-		progress.setString("X/X");
+		progress.setString("0/0");
 
 
 
@@ -137,27 +141,26 @@ public class MusicPlayer {
 
 	}
 
-	public static void start(){
-		isPlaying = true;
-		while(index < playlist.getPlaylist().size()){
-			Player music = new Player(progress, 0);
+	/// Inicia música no index + range
+	//  Range pode ser utilizado para reposicionar o index no final de músicas, next e prev
+	public static void start(int range){
+		progress.setString("loading...");
+
+		if(index +range < playlist.getPlaylist().size()){        //verfica se há música no index + range
+			index +=range;										 // atualiza o index
+			musicTime = new Player(progress, 0);
 			Song song =  playlist.getPlaylist().get(index);
 			String song_name = song.getName();
 			int song_duration = song.getDuration();
-			currentSong.setText("Currently playing: "+ song_name);
-			music.setMusicLength(song_duration);
-			music.execute();
+			currentSong.setText("Current playing: "+song_name);
+			musicTime.setMusicLength(song_duration);
+			musicTime.execute();
 			isPlaying = true;
-			while (music.isRunning())
-			index++;
+		}else {
+			index = 0;
+			progress.setString("0/0");
+			isPlaying = false;
 		}
-		isPlaying = false;
-		index = 0;
-	}
-
-	public static void setSelectedSong(){
-		int songSelectedIndex = songList.getSelectedIndex();
-		song_selected = playlist.getPlaylist().get(songSelectedIndex);
 	}
 
 }
