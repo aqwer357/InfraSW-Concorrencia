@@ -17,7 +17,10 @@ import java.util.concurrent.locks.ReentrantLock;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
-	private static Song song_selected;
+	private static Song song_selected = new Song("");
+	private static int index = 0;
+	private static boolean isPlaying = false;
+
 	// Criando o painel de cima
 	private static JPanel northPanel = new JPanel();
 	private static JProgressBar progress = new JProgressBar(); // Barra de progresso da musica
@@ -73,7 +76,8 @@ public class MusicPlayer {
 
 					playlist.addSong(songName); // Adiciona a musica na playlist
 					songList.setListData(playlist.getPlaylist().toArray()); // Atualiza a lista da GUI
-
+					if(playlist.getPlaylist().size() == 1)
+						start();
 				}
 			}
 		});
@@ -90,22 +94,31 @@ public class MusicPlayer {
 
 		playPause.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				setSelectedSong(songList);
-				String song_name = song_selected.getName();
-				int song_duration = song_selected.getDuration();
 
-				if(!musicTime.isRunning()){
-					currentSong.setText("Currently playing: "+ song_name);
-					musicTime.setMusicLength(song_duration);
-					musicTime.execute();
+				if(!isPlaying) {
+					start();
 				}
-				else if(musicTime.isPaused()) {
-					currentSong.setText("Currently playing: "+ song_name);
-					musicTime.resume();
-				}
-				else {
-					currentSong.setText("Currently paused: " + song_name);
-					musicTime.pause();
+				else{
+					setSelectedSong();
+					String song_name = song_selected.getName();
+					int song_duration = song_selected.getDuration();
+
+					if(!musicTime.isRunning()){
+						musicTime = new Player(progress, 0);
+						currentSong.setText("Currently playing: "+ song_name);
+						musicTime.setMusicLength(song_duration);
+						musicTime.execute();
+						isPlaying = true;
+					}
+					else if(musicTime.isPaused()) {
+						currentSong.setText("Currently playing: "+ song_name);
+						musicTime.resume();
+						isPlaying = true;
+					}
+					else {
+						currentSong.setText("Currently paused: " + song_name);
+						musicTime.pause();
+					}
 				}
 			}
 		});
@@ -121,9 +134,28 @@ public class MusicPlayer {
 		frame.getContentPane().add(BorderLayout.SOUTH, southPanel);
 		frame.setVisible(true);
 
+
 	}
 
-	public static void setSelectedSong(JList songList){
+	public static void start(){
+		isPlaying = true;
+		while(index < playlist.getPlaylist().size()){
+			Player music = new Player(progress, 0);
+			Song song =  playlist.getPlaylist().get(index);
+			String song_name = song.getName();
+			int song_duration = song.getDuration();
+			currentSong.setText("Currently playing: "+ song_name);
+			music.setMusicLength(song_duration);
+			music.execute();
+			isPlaying = true;
+			while (music.isRunning())
+			index++;
+		}
+		isPlaying = false;
+		index = 0;
+	}
+
+	public static void setSelectedSong(){
 		int songSelectedIndex = songList.getSelectedIndex();
 		song_selected = playlist.getPlaylist().get(songSelectedIndex);
 	}

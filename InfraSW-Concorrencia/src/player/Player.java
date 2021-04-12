@@ -64,6 +64,8 @@ public class Player extends SwingWorker<Boolean, Integer> {
 		boolean status;
 		try {
 			// Retrieve the return value of doInBackground.
+			running = false;
+			progress.setString("X/");
 			status = get();
 		} catch (InterruptedException e) {
 			// This is thrown if the thread's interrupted.

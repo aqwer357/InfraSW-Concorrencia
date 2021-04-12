@@ -15,7 +15,7 @@ public class Song {
 
     public int time(){
         Random random = new Random();
-        int time = random.nextInt(60000) + 60000;
+        int time = random.nextInt(6) +1;
         return time;
     }
 
