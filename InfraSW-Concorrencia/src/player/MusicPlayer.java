@@ -8,11 +8,14 @@ import java.awt.*;
 import java.util.ArrayList;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
 	private static int index = 0;
 	private static boolean queueIsEmpty = true;
+	private static ExecutorService exec = Executors.newFixedThreadPool(1);
 
 	// Criando o painel de cima
 	private static JPanel northPanel = new JPanel();
@@ -31,8 +34,8 @@ public class MusicPlayer {
 	private static JLabel currentSong = new JLabel("Currently "); // Mostra a musica sendo tocada
 	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
 
-	// Array de SwingWorkers, cada musica será um novo thread
-	private static ArrayList<Player> threads = new ArrayList();
+	// Array de SwingWorkers, cada musica serï¿½ um novo thread
+	private static ArrayList<Timer> threads = new ArrayList();
 
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
@@ -68,7 +71,7 @@ public class MusicPlayer {
 					String songName = fc.getSelectedFile().getName(); // Obtem o nome do arquivo selecionado
 
 					playlist.addSong(songName); // Adiciona a musica na playlist
-					threads.add(new Player (progress, playlist.getLastSong().getDuration()));	
+					threads.add(new Timer (progress, playlist.getLastSong().getDuration()));
 					songList.setListData(playlist.getPlaylist().toArray()); // Atualiza a lista da GUI
 					
 					if (playlist.getPlaylist().size() == 1 && queueIsEmpty) {
@@ -85,7 +88,8 @@ public class MusicPlayer {
 				int songSelectedIndex = songList.getSelectedIndex(); // Obtem o index do item selecionado
 
 				playlist.removeSong(songSelectedIndex);// Remove a musica da playlist
-				threads.get(songSelectedIndex).cancel(true);
+				threads.get(songSelectedIndex).stop();
+//				exec.shutdown();
 				threads.remove(songSelectedIndex);
 				songList.setListData(playlist.getPlaylist().toArray());
 				
@@ -126,7 +130,8 @@ public class MusicPlayer {
 		
 		previous.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				threads.get(index).cancel(true); // Para de tocar a musica atual
+			threads.get(index).stop(); // Para de tocar a musica atual
+//				exec.shutdown();
 				start(-1); // Comeca a tocar a music anterior da fila
 				progress.setString("loading...");
 			}
@@ -134,7 +139,8 @@ public class MusicPlayer {
 		
 		next.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				threads.get(index).cancel(true);
+				threads.get(index).stop();
+//				exec.shutdown();
 				start(1); // Comeca a tocar a proxima musica da fila
 				progress.setString("loading...");
 			}
@@ -165,12 +171,12 @@ public class MusicPlayer {
 			
 			Song song = playlist.getPlaylist().get(index);
 			currentSong.setText("Current playing: " + song.getName());
-			
+
 			// Caso o thread ja tenha sido executado, eh necessario criar uma nova instancia dele
-			if (threads.get(index).isDone())
-				threads.set(index, new Player(progress, song.getDuration()));
-			
-			threads.get(index).execute();
+//			if (threads.get(index).isDone())
+			threads.set(index, new Timer(progress, song.getDuration()));
+
+			exec.submit(threads.get(index));
 			queueIsEmpty = false;
 		} else {
 			index = 0;

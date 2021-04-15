@@ -41,7 +41,7 @@ public class Player extends SwingWorker<Boolean, Integer> {
 		try {
 			lock.lock();
 			// Contando o tempo de execucao da musica, roda-se o loop 10 vezes por segundo para evitar delay
-			// quando o usuário pausar a musica.
+			// quando o usuï¿½rio pausar a musica.
 			for (int i = 0; i <= musicLength*10; i++) {
 				
 				// Se pausado, vai esperar resume mandar o sinal para despausar antes de continuar a contagem
@@ -53,6 +53,7 @@ public class Player extends SwingWorker<Boolean, Integer> {
 			}
 
 		} finally {
+
 			lock.unlock();
 		}
 		
