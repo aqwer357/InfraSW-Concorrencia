@@ -34,8 +34,8 @@ public class MusicPlayer {
 	private static JLabel currentSong = new JLabel("Currently "); // Mostra a musica sendo tocada
 	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
 
-	// Array de SwingWorkers, cada musica ser� um novo thread
-	private static ArrayList<Timer> threads = new ArrayList();
+	// Array de timers, cada musica sera um novo thread
+	private static Timer timer = new Timer(progress, 0);
 
 	public static void main(String[] args) {
 		SongListCellRenderer customCellRenderer = new SongListCellRenderer();
@@ -53,7 +53,7 @@ public class MusicPlayer {
 		northPanel.add(addSong);
 
 		// Criando o painel que vai mostrar a playlist no meio
-		songList.setCellRenderer(customCellRenderer); // Altera o que vai ser exibido do objeto na lista
+		songList.setCellRenderer(customCellRenderer); // Altera o que vai ser exibido do objeto Song na lista
 		scrollPane.setViewportView(songList);
 
 		currentSong.setFont(new Font("Tahoma", Font.PLAIN, 16));
@@ -71,9 +71,8 @@ public class MusicPlayer {
 					String songName = fc.getSelectedFile().getName(); // Obtem o nome do arquivo selecionado
 
 					playlist.addSong(songName); // Adiciona a musica na playlist
-					threads.add(new Timer (progress, playlist.getLastSong().getDuration()));
 					songList.setListData(playlist.getPlaylist().toArray()); // Atualiza a lista da GUI
-					
+
 					if (playlist.getPlaylist().size() == 1 && queueIsEmpty) {
 						queueIsEmpty = false;
 						index = 0;
@@ -88,11 +87,8 @@ public class MusicPlayer {
 				int songSelectedIndex = songList.getSelectedIndex(); // Obtem o index do item selecionado
 
 				playlist.removeSong(songSelectedIndex);// Remove a musica da playlist
-				threads.get(songSelectedIndex).stop();
-//				exec.shutdown();
-				threads.remove(songSelectedIndex);
 				songList.setListData(playlist.getPlaylist().toArray());
-				
+
 				// Caso a musica que esta tocando seja removida da playlist, a proxima toca
 				if (songSelectedIndex == index)
 					start(0);
@@ -102,50 +98,34 @@ public class MusicPlayer {
 
 		playPause.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				//int songSelectedIndex = songList.getSelectedIndex();
-				//if (songSelectedIndex >= 0) { 				// verifica se ha som selecionado
-				//	if (!queueIsEmpty) { 						// se sim e estiver tocando algo, cancela a musica atual
-				//		index = songSelectedIndex - 1; 		// decrementa o index pois a funcao done da musica cancelada
-				//											// chamara start+1, mas nao queremos range
-				//		musicTime.cancel(true);
-				//	} else { 								// Se nao estiver tocando comeca a partir da musica selecionada
-				//		index = songSelectedIndex;
-				//		start(0);
-				//	}
-				
-				
 				if (queueIsEmpty) { // Se nao tem musica selecionada e nem esta tocando, comeca da primeira musica
 					queueIsEmpty = false;
 					index = 0;
 					start(0);
-				} else if (threads.get(index).isPaused()) {
+				} else if (timer.isPaused()) {
 					currentSong.setText("Currently playing: " + playlist.getPlaylist().get(index).getName());
-					threads.get(index).resume();
+					timer.resume();
 				} else {
 					currentSong.setText("Currently paused:" + playlist.getPlaylist().get(index).getName());
-					threads.get(index).pause();
+					timer.pause();
 				}
 			}
 		});
-		
+
 		previous.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-			threads.get(index).stop(); // Para de tocar a musica atual
-//				exec.shutdown();
-				start(-1); // Comeca a tocar a music anterior da fila
 				progress.setString("loading...");
+				start(-1); // Comeca a tocar a musica anterior da fila
 			}
 		});
-		
+
 		next.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				threads.get(index).stop();
-//				exec.shutdown();
-				start(1); // Comeca a tocar a proxima musica da fila
 				progress.setString("loading...");
+				start(1); // Comeca a tocar a proxima musica da fila
 			}
 		});
-		
+
 		progress.setStringPainted(true);
 		progress.setString("0/0");
 
@@ -156,27 +136,27 @@ public class MusicPlayer {
 
 	}
 
-	/// Inicia musica no index + range
+	// Inicia musica no index + range
 	// Range pode ser utilizado para reposicionar o index no final de musicas, next
-	/// e prev
+	// e prev
 	public static void start(int range) {
 		progress.setString("loading...");
 
 		if (index + range < playlist.getPlaylist().size()) { // verfica se ha musica no index + range
 			index += range; // atualiza o index
-			
+
 			// Para caso se aperte previous na primeira musica da fila
 			if (index < 0)
 				index = 0;
-			
+
 			Song song = playlist.getPlaylist().get(index);
 			currentSong.setText("Current playing: " + song.getName());
 
-			// Caso o thread ja tenha sido executado, eh necessario criar uma nova instancia dele
-//			if (threads.get(index).isDone())
-			threads.set(index, new Timer(progress, song.getDuration()));
+			// Caso o thread ja tenha sido executado, eh necessario criar uma nova instancia
+			// dele
+			timer.newSong(song.getDuration());
 
-			exec.submit(threads.get(index));
+			exec.submit(timer);
 			queueIsEmpty = false;
 		} else {
 			index = 0;
