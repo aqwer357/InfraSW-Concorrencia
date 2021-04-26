@@ -10,11 +10,13 @@ import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.Random;
 
 public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
 	private static int index = 0;
 	private static boolean queueIsEmpty = true;
+	private static boolean random = true;
 	private static ExecutorService exec = Executors.newFixedThreadPool(1);
 
 	// Criando o painel de cima
@@ -142,6 +144,10 @@ public class MusicPlayer {
 	public static void start(int range) {
 		progress.setString("loading...");
 
+		if(random && range != 0)
+			range = getRandom(range);
+
+
 		if (index + range < playlist.getPlaylist().size()) { // verfica se ha musica no index + range
 			index += range; // atualiza o index
 
@@ -166,4 +172,18 @@ public class MusicPlayer {
 		}
 	}
 
+	private static int getRandom(int range) {
+		int min = 1;
+		int max = playlist.getPlaylist().size()-1-index, aux = 1;
+		Random rnd = new Random();
+
+		if(range < 0){
+			max = index;
+			aux *= -1;
+		}
+
+		return aux * ((max != min)? (rnd.nextInt(max - min) + min):(max));
+	}
+
 }
+
