@@ -144,8 +144,10 @@ public class MusicPlayer {
 	public static void start(int range) {
 		progress.setString("loading...");
 
-		if(random && range != 0)
-			range = getRandom(range);
+		if(random && range != 0){
+			index = getIndex();
+			range = 0;
+		}
 
 
 		if (index + range < playlist.getPlaylist().size()) { // verfica se ha musica no index + range
@@ -161,7 +163,8 @@ public class MusicPlayer {
 			// Caso o thread ja tenha sido executado, eh necessario criar uma nova instancia
 			// dele
 			timer.newSong(song.getDuration());
-
+			song.setDone(true);
+			System.out.println("Index: " + index);
 			exec.submit(timer);
 			queueIsEmpty = false;
 		} else {
@@ -174,7 +177,7 @@ public class MusicPlayer {
 
 	private static int getRandom(int range) {
 		int min = 1;
-		int max = playlist.getPlaylist().size()-1-index, aux = 1;
+		int max = playlist.getPlaylist().size()-index, aux = 1;
 		Random rnd = new Random();
 
 		if(range < 0){
@@ -182,7 +185,35 @@ public class MusicPlayer {
 			aux *= -1;
 		}
 
-		return aux * ((max != min)? (rnd.nextInt(max - min) + min):(max));
+		int newRange = (max != min)? (rnd.nextInt((max - min)+ 1) + min):(max);
+		return aux * newRange;
+	}
+
+	private static int getIndex() {
+		int cont = 0, index = 0;
+		boolean found = false;
+		Random rnd = new Random();
+
+		// busca um indice até achar um som que não foi tocado
+		while (!found && cont < playlist.getPlaylist().size()) {
+			index = rnd.nextInt(playlist.getPlaylist().size());
+			found = !playlist.getPlaylist().get(index).isDone();
+			cont++;
+		}
+
+		// se não achar volta para o primeiro e reseta as marcações done
+		if (!found) {
+			index = 0;
+			System.out.println("==========================================\n");
+			resetRandom();
+		}
+		return index;
+	}
+
+	private static void resetRandom(){
+		for (int i= 0; i < playlist.getPlaylist().size(); i++){
+			playlist.getPlaylist().get(i).setDone(false);
+		}
 	}
 
 }

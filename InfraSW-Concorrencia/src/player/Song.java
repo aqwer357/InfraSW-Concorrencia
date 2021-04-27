@@ -6,16 +6,18 @@ public class Song {
     private String Name;
     private int Duration;
     private boolean Playing;
+    private boolean done;
 
     public Song(String name){
         this.Name = name;
         this.Duration = time();
         this.Playing = false;
+        this.done = false;
     }
 
     public int time(){
         Random random = new Random();
-        int time = random.nextInt(10) + 10; // Duracao da musica em segundos
+        int time = random.nextInt(4) + 4; // Duracao da musica em segundos
         return time;
     }
 
@@ -39,5 +41,12 @@ public class Song {
     }
     public boolean isPlaying() {
         return Playing;
+    }
+
+    public void setDone(boolean done) {
+        this.done = done;
+    }
+    public boolean isDone() {
+        return done;
     }
 }
