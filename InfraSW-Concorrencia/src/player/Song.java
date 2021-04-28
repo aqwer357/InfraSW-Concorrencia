@@ -6,13 +6,11 @@ public class Song {
     private String Name;
     private int Duration;
     private boolean Playing;
-    private boolean done;
 
     public Song(String name){
         this.Name = name;
         this.Duration = time();
         this.Playing = false;
-        this.done = false;
     }
 
     public int time(){
@@ -41,12 +39,5 @@ public class Song {
     }
     public boolean isPlaying() {
         return Playing;
-    }
-
-    public void setDone(boolean done) {
-        this.done = done;
-    }
-    public boolean isDone() {
-        return done;
     }
 }

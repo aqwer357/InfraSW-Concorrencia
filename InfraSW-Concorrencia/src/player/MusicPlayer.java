@@ -16,7 +16,8 @@ public class MusicPlayer {
 	private final static Playlist playlist = new Playlist();
 	private static int index = 0;
 	private static boolean queueIsEmpty = true;
-	private static boolean random = true;
+	private static boolean random = false;
+	private static ArrayList<Integer> lastIndexes = new ArrayList<Integer>(); //Lista de indexes das musicas que faltam ser tocadas
 	private static ExecutorService exec = Executors.newFixedThreadPool(1);
 
 	// Criando o painel de cima
@@ -26,6 +27,7 @@ public class MusicPlayer {
 	private static JButton playPause = new JButton(">/||"); // Botao play/pause
 	private static JButton next = new JButton(">>"); // Botao para proxima musica
 	private static JButton addSong = new JButton("Add..."); // Botao para adicionar musica
+	private static JButton randomBtn = new JButton("->"); // Botao para ativar o modo aleatorio
 
 	// ScrollPane para exibir a playlist
 	private static JScrollPane scrollPane = new JScrollPane();
@@ -53,6 +55,7 @@ public class MusicPlayer {
 		northPanel.add(playPause);
 		northPanel.add(next);
 		northPanel.add(addSong);
+		northPanel.add(randomBtn);
 
 		// Criando o painel que vai mostrar a playlist no meio
 		songList.setCellRenderer(customCellRenderer); // Altera o que vai ser exibido do objeto Song na lista
@@ -74,7 +77,7 @@ public class MusicPlayer {
 
 					playlist.addSong(songName); // Adiciona a musica na playlist
 					songList.setListData(playlist.getPlaylist().toArray()); // Atualiza a lista da GUI
-
+					lastIndexes.add(playlist.getPlaylist().size()-1);
 					if (playlist.getPlaylist().size() == 1 && queueIsEmpty) {
 						queueIsEmpty = false;
 						index = 0;
@@ -90,7 +93,7 @@ public class MusicPlayer {
 
 				playlist.removeSong(songSelectedIndex);// Remove a musica da playlist
 				songList.setListData(playlist.getPlaylist().toArray());
-
+				lastIndexes.remove(songSelectedIndex);
 				// Caso a musica que esta tocando seja removida da playlist, a proxima toca
 				if (songSelectedIndex == index)
 					start(0);
@@ -103,6 +106,7 @@ public class MusicPlayer {
 				if (queueIsEmpty) { // Se nao tem musica selecionada e nem esta tocando, comeca da primeira musica
 					queueIsEmpty = false;
 					index = 0;
+					fillIndexes();
 					start(0);
 				} else if (timer.isPaused()) {
 					currentSong.setText("Currently playing: " + playlist.getPlaylist().get(index).getName());
@@ -128,6 +132,19 @@ public class MusicPlayer {
 			}
 		});
 
+		randomBtn.addActionListener(new ActionListener() {
+			public void actionPerformed(ActionEvent button) {
+				random = !random;
+				if(random) {
+					randomBtn.setText("?");
+					fillIndexes();
+				}else {
+					randomBtn.setText("->");
+					lastIndexes.clear();
+				}
+			}
+		});
+
 		progress.setStringPainted(true);
 		progress.setString("0/0");
 
@@ -144,11 +161,12 @@ public class MusicPlayer {
 	public static void start(int range) {
 		progress.setString("loading...");
 
-		if(random && range != 0){
+		if(!lastIndexes.isEmpty()){ //Se a playlist não está vazia entao e aleatorio, pois o modo sequncial sempre limpa a lista de indexes
 			index = getIndex();
 			range = 0;
+		}else if(random){  //Se está vazia e é aleatorio precisa parar
+			range = playlist.getPlaylist().size();
 		}
-
 
 		if (index + range < playlist.getPlaylist().size()) { // verfica se ha musica no index + range
 			index += range; // atualiza o index
@@ -163,7 +181,6 @@ public class MusicPlayer {
 			// Caso o thread ja tenha sido executado, eh necessario criar uma nova instancia
 			// dele
 			timer.newSong(song.getDuration());
-			song.setDone(true);
 			System.out.println("Index: " + index);
 			exec.submit(timer);
 			queueIsEmpty = false;
@@ -172,49 +189,35 @@ public class MusicPlayer {
 			currentSong.setText("Current playing: ...");
 			progress.setString("0/0");
 			queueIsEmpty = true;
+			timer.newSong(0);
+			exec.submit(timer);
 		}
 	}
 
-	private static int getRandom(int range) {
-		int min = 1;
-		int max = playlist.getPlaylist().size()-index, aux = 1;
-		Random rnd = new Random();
-
-		if(range < 0){
-			max = index;
-			aux *= -1;
-		}
-
-		int newRange = (max != min)? (rnd.nextInt((max - min)+ 1) + min):(max);
-		return aux * newRange;
-	}
-
+	//Escolhe um index randomicamente que ainda não foi escolhido
 	private static int getIndex() {
-		int cont = 0, index = 0;
-		boolean found = false;
+		int aux = 0, newIndex = 0; // recebe uma posicao na lista de indice
 		Random rnd = new Random();
 
-		// busca um indice até achar um som que não foi tocado
-		while (!found && cont < playlist.getPlaylist().size()) {
-			index = rnd.nextInt(playlist.getPlaylist().size());
-			found = !playlist.getPlaylist().get(index).isDone();
-			cont++;
+
+		if (lastIndexes.size() > 1) {                         //se a lista tiver 1 item ou 0 não tem opcoes para ser aleatorio
+			aux = rnd.nextInt(lastIndexes.size() - 1); //aux recebe uma posicao existente na lista de indexes
+			newIndex = lastIndexes.get(aux);
+			lastIndexes.remove(aux);
+		}else{                                                // se tive apenas uma música, remove-la
+			lastIndexes.remove(0);
 		}
 
-		// se não achar volta para o primeiro e reseta as marcações done
-		if (!found) {
-			index = 0;
-			System.out.println("==========================================\n");
-			resetRandom();
-		}
-		return index;
+
+		return newIndex;
 	}
 
-	private static void resetRandom(){
-		for (int i= 0; i < playlist.getPlaylist().size(); i++){
-			playlist.getPlaylist().get(i).setDone(false);
+	private static void fillIndexes(){
+		for (int i = 0; i < playlist.getPlaylist().size(); i++){
+			lastIndexes.add(i);
 		}
 	}
+
 
 }
 
