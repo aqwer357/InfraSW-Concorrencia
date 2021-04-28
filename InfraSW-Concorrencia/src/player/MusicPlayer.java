@@ -6,6 +6,7 @@ import java.util.concurrent.Executors;
 import javax.swing.*;
 import java.awt.*;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.awt.event.ActionEvent;
 import java.awt.event.ActionListener;
 import java.util.concurrent.ExecutorService;
@@ -17,7 +18,8 @@ public class MusicPlayer {
 	private static int index = 0;
 	private static boolean queueIsEmpty = true;
 	private static boolean random = false;
-	private static ArrayList<Integer> lastIndexes = new ArrayList<Integer>(); //Lista de indexes das musicas que faltam ser tocadas
+	private static int songSelectedIndex;
+	private static ArrayList<Integer> shufflePlaylist = new ArrayList<Integer>(); //Lista de indexes das musicas que faltam ser tocadas
 	private static ExecutorService exec = Executors.newFixedThreadPool(1);
 
 	// Criando o painel de cima
@@ -35,9 +37,9 @@ public class MusicPlayer {
 
 	// Criando o painel inferior
 	private static JPanel southPanel = new JPanel();
-	private static JLabel currentSong = new JLabel("Currently "); // Mostra a musica sendo tocada
+	private static JLabel currentSong = new JLabel("Currently playing:..."); // Mostra a musica sendo tocada
 	private static JButton removeSong = new JButton("X"); // Botao que remove a musica selecionada na lista
-
+	
 	// Array de timers, cada musica sera um novo thread
 	private static Timer timer = new Timer(progress, 0);
 
@@ -47,16 +49,16 @@ public class MusicPlayer {
 
 		JFrame frame = new JFrame("Music Player");
 		frame.setDefaultCloseOperation(JFrame.EXIT_ON_CLOSE);
-		frame.setSize(400, 300);
+		frame.setSize(500, 375);
 
 		// Adicionando os componentes ao painel superior
 		northPanel.add(progress);
 		northPanel.add(previous);
 		northPanel.add(playPause);
 		northPanel.add(next);
-		northPanel.add(addSong);
 		northPanel.add(randomBtn);
-
+		northPanel.add(addSong);
+		
 		// Criando o painel que vai mostrar a playlist no meio
 		songList.setCellRenderer(customCellRenderer); // Altera o que vai ser exibido do objeto Song na lista
 		scrollPane.setViewportView(songList);
@@ -77,7 +79,14 @@ public class MusicPlayer {
 
 					playlist.addSong(songName); // Adiciona a musica na playlist
 					songList.setListData(playlist.getPlaylist().toArray()); // Atualiza a lista da GUI
-					lastIndexes.add(playlist.getPlaylist().size()-1);
+					
+					if (random) { // Caso se adicione mais musicas a playlist no modo aleatorio, e necessario reembaralhar shufflePlaylist
+						shufflePlaylist.clear();
+						// Thread para criar a playlist aleatoria, serve para evitar que a GUI sofra de latencia
+						Thread createShuffle = new Thread(CreateShufflePlaylist);
+						createShuffle.start();
+					}
+					
 					if (playlist.getPlaylist().size() == 1 && queueIsEmpty) {
 						queueIsEmpty = false;
 						index = 0;
@@ -89,15 +98,28 @@ public class MusicPlayer {
 
 		removeSong.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				int songSelectedIndex = songList.getSelectedIndex(); // Obtem o index do item selecionado
-
+				songSelectedIndex = songList.getSelectedIndex(); // Obtem o index do item selecionado
+				
 				playlist.removeSong(songSelectedIndex);// Remove a musica da playlist
 				songList.setListData(playlist.getPlaylist().toArray());
-				lastIndexes.remove(songSelectedIndex);
-				// Caso a musica que esta tocando seja removida da playlist, a proxima toca
-				if (songSelectedIndex == index)
+				
+				// Se remover uma musica, shufflePlaylist deve ser reembaralhada
+				if (random) {
+					int currentShuffleIndex = shufflePlaylist.get(index);
+					
+					// Caso a musica tocando seja removida, a que tomou seu index na playlist e tocada
+					if (currentShuffleIndex == songSelectedIndex)
+						start(0);
+					
+					shufflePlaylist.clear();
+					Thread createShuffle = new Thread(CreateShufflePlaylist);
+					createShuffle.start();
+					
+					
+				} else if (songSelectedIndex == index) {// Caso a musica que esta tocando seja removida da playlist, a proxima toca
 					start(0);
-
+				}
+				
 			}
 		});
 
@@ -106,7 +128,6 @@ public class MusicPlayer {
 				if (queueIsEmpty) { // Se nao tem musica selecionada e nem esta tocando, comeca da primeira musica
 					queueIsEmpty = false;
 					index = 0;
-					fillIndexes();
 					start(0);
 				} else if (timer.isPaused()) {
 					currentSong.setText("Currently playing: " + playlist.getPlaylist().get(index).getName());
@@ -134,20 +155,23 @@ public class MusicPlayer {
 
 		randomBtn.addActionListener(new ActionListener() {
 			public void actionPerformed(ActionEvent button) {
-				random = !random;
+				random = !random; // Alterna o valor de random para ativar/desativar shuffle
 				if(random) {
-					randomBtn.setText("?");
-					fillIndexes();
-				}else {
+					Thread createShuffle = new Thread(CreateShufflePlaylist);
+					createShuffle.start();
+					randomBtn.setText("-?");
+				} else {
+					index = shufflePlaylist.get(index); // Caso desative shuffle, volta a ordem normal a partir da musica atual
+					shufflePlaylist.clear();
 					randomBtn.setText("->");
-					lastIndexes.clear();
 				}
 			}
 		});
 
 		progress.setStringPainted(true);
-		progress.setString("0/0");
+		progress.setString("00:00");
 
+		// Tornando a GUI visivel
 		frame.getContentPane().add(BorderLayout.NORTH, northPanel);
 		frame.getContentPane().add(BorderLayout.CENTER, scrollPane);
 		frame.getContentPane().add(BorderLayout.SOUTH, southPanel);
@@ -160,64 +184,51 @@ public class MusicPlayer {
 	// e prev
 	public static void start(int range) {
 		progress.setString("loading...");
-
-		if(!lastIndexes.isEmpty()){ //Se a playlist não está vazia entao e aleatorio, pois o modo sequncial sempre limpa a lista de indexes
-			index = getIndex();
-			range = 0;
-		}else if(random){  //Se está vazia e é aleatorio precisa parar
-			range = playlist.getPlaylist().size();
-		}
-
+		
 		if (index + range < playlist.getPlaylist().size()) { // verfica se ha musica no index + range
 			index += range; // atualiza o index
 
 			// Para caso se aperte previous na primeira musica da fila
 			if (index < 0)
 				index = 0;
-
-			Song song = playlist.getPlaylist().get(index);
+			
+			Song song;
+			
+			if (random) {
+				int shuffleIndex = shufflePlaylist.get(index);
+				song = playlist.getPlaylist().get(shuffleIndex);
+			} else {
+				song = playlist.getPlaylist().get(index);
+			}
 			currentSong.setText("Current playing: " + song.getName());
 
 			// Caso o thread ja tenha sido executado, eh necessario criar uma nova instancia
 			// dele
 			timer.newSong(song.getDuration());
-			System.out.println("Index: " + index);
 			exec.submit(timer);
 			queueIsEmpty = false;
-		} else {
+		} else { // Quando a playlist acaba, colocamos o timer como 00:00 
 			index = 0;
 			currentSong.setText("Current playing: ...");
-			progress.setString("0/0");
+			progress.setString("00:00");
 			queueIsEmpty = true;
-			timer.newSong(0);
-			exec.submit(timer);
 		}
 	}
-
-	//Escolhe um index randomicamente que ainda não foi escolhido
-	private static int getIndex() {
-		int aux = 0, newIndex = 0; // recebe uma posicao na lista de indice
-		Random rnd = new Random();
-
-
-		if (lastIndexes.size() > 1) {                         //se a lista tiver 1 item ou 0 não tem opcoes para ser aleatorio
-			aux = rnd.nextInt(lastIndexes.size() - 1); //aux recebe uma posicao existente na lista de indexes
-			newIndex = lastIndexes.get(aux);
-			lastIndexes.remove(aux);
-		}else{                                                // se tive apenas uma música, remove-la
-			lastIndexes.remove(0);
+	
+	
+	static Runnable CreateShufflePlaylist = () -> {
+		for (int i = 0; i < playlist.getPlaylist().size(); i++){ // Adiciona-se os indexes a shufflePlaylist
+			if (i != index) // Exceto o da musica atual, que sera sempre a primeira
+				shufflePlaylist.add(i);
 		}
-
-
-		return newIndex;
-	}
-
-	private static void fillIndexes(){
-		for (int i = 0; i < playlist.getPlaylist().size(); i++){
-			lastIndexes.add(i);
-		}
-	}
-
+		
+		Collections.shuffle(shufflePlaylist); // Mistura shufflePlaylist
+		
+		shufflePlaylist.add(0, index); // Adiciona a musica atual ao inicio da playlist misturada
+		
+		index = 0;
+		
+	};
 
 }
 
