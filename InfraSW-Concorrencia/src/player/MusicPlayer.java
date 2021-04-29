@@ -118,9 +118,11 @@ public class MusicPlayer {
 
 						// Caso a musica tocando seja removida, a que tomou seu index na playlist e
 						// tocada
-						if (index == songSelectedIndex)
+						if (index == songSelectedIndex) {
+							random = false;
 							start(0);
-
+							random = true; // Essa coisa do random eh p ter certeza q ele so comece a tocar a musica certa msm, sem ser em ordem aleatoria
+						}
 						shufflePlaylist.clear();
 						Thread createShuffle = new Thread(CreateShufflePlaylist);
 						createShuffle.start();
@@ -231,19 +233,12 @@ public class MusicPlayer {
 		for (int i = 0; i < playlist.getPlaylist().size(); i++) { // Adiciona-se os indexes a shufflePlaylist
 			if (i != index) { // Exceto o da musica atual, que sera sempre a primeira
 				shufflePlaylist.add(i);
-				// } else if (i != songSelectedIndex && random) { // utiliso do boolean random
-				// pra determinar se isso eh um shuffle novo ou um reshuffle devido a remocao
-				// shufflePlaylist.add(i);
 			}
 		}
 
 		Collections.shuffle(shufflePlaylist); // Mistura shufflePlaylist
 
-		// Adiciona a musica atual ao inicio da playlist misturada
-		// if (random)
 		shufflePlaylist.add(0, index);
-		// else
-		// shufflePlaylist.add(0, songSelectedIndex);
 
 		index = 0;
 
